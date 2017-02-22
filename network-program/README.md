@@ -1,27 +1,32 @@
-ÍøÂç±à³ÌµÄÑ§Ï°¼ÇÂ¼£º
+ç½‘ç»œç¼–ç¨‹çš„å­¦ä¹ è®°å½•ï¼š
 
-¡¾socket×¢Òâµã¡¿
-£¨1£©socket.sendÁ¬ĞøÊ¹ÓÃ£¬¿ÉÄÜ»á·¢ÉúÕ³°ü
-£¨2£©socket.sendÊı¾İ²»¿É´«¿Õ
-£¨3£©socket.recvÊÇ×èÈûÄ£Ê½
-£¨4£©µ±socket.recv²»ÔÚ×èÈûÊ±£¬ÇÒ½ÓÊÜÊı¾İÎª¿Õ£¬±íÊ¾¿Í»§¶Ë¶Ï¿ªÁ´½Ó¡£
+ã€socketæ³¨æ„ç‚¹ã€‘
+ï¼ˆ1ï¼‰socket.sendè¿ç»­ä½¿ç”¨ï¼Œå¯èƒ½ä¼šå‘ç”Ÿç²˜åŒ…
+ï¼ˆ2ï¼‰socket.sendæ•°æ®ä¸å¯ä¼ ç©º
+ï¼ˆ3ï¼‰socket.recvæ˜¯é˜»å¡æ¨¡å¼
+ï¼ˆ4ï¼‰å½“socket.recvä¸åœ¨é˜»å¡æ—¶ï¼Œä¸”æ¥å—æ•°æ®ä¸ºç©ºï¼Œè¡¨ç¤ºå®¢æˆ·ç«¯æ–­å¼€é“¾æ¥ã€‚
+
+ã€socketserveræ“ä½œæµç¨‹ã€‘
+ï¼ˆ1ï¼‰First, you must create a request handler class by subclassing the BaseRequestHandlerclass and overriding its handle() method; this method will process incoming requests. ã€€ã€€
+ï¼ˆ2ï¼‰Second, you must instantiate one of the server classes, passing it the serverâ€™s address and the request handler class.
+ï¼ˆ3ï¼‰Then call the handle_request() or serve_forever() method of the server object to process one or many requests.
+ï¼ˆ4ï¼‰Finally, call server_close() to close the socket.
+
+è¯¦è§http://www.cnblogs.com/alex3714/articles/5830365.html
+
+ã€æ—¶é—´å†ç¨‹ã€‘æ—¶é—´ã€å®ç°æ–¹å¼ã€åŠŸèƒ½
+2017.2.19 socketå®ç°ssh å‘½ä»¤è§£æã€å¤§æ•°æ®å¤„ç†å’Œä¸‰ç§æ–¹å¼å®ç°ç²˜åŒ…å¤„ç†
+2017.2.19 socketå®ç°get_file æ–‡ä»¶ä¸‹è½½å’ŒMD5
+2017.2.19 socketserveråŸºæœ¬ä½¿ç”¨ å¤šç”¨æˆ·ä¸æœåŠ¡å™¨äº¤äº’
+
+ã€çº¿ç¨‹å’Œè¿›ç¨‹ã€‘
+ï¼ˆ1ï¼‰çº¿ç¨‹æ˜¯ç”¨äºæ‰§è¡Œçš„ï¼Œè¿›ç¨‹æ˜¯èµ„æºçš„é›†åˆ
+ï¼ˆ2ï¼‰çº¿ç¨‹æ˜¯èµ„æºå…±äº«ï¼Œè¿›ç¨‹æ˜¯ç‹¬ç«‹çš„ã€‚
+ï¼ˆ3ï¼‰åˆ›å»ºçº¿ç¨‹å¿«ï¼Œåˆ›å»ºè¿›ç¨‹æ…¢
+ï¼ˆ4ï¼‰çº¿ç¨‹å’Œè¿›ç¨‹æ‰§è¡Œé€Ÿåº¦ï¼Œæ²¡æœ‰å¯æ¯”æ€§ã€‚è¿›ç¨‹çš„æ‰§è¡Œä¹Ÿæ˜¯é€šè¿‡çº¿ç¨‹æ‰§è¡Œçš„ã€‚è¦æ¯”çš„è¯ï¼Œä¸€æ ·å¿«ã€‚
+ï¼ˆ5ï¼‰è¿›ç¨‹ä¸­è‡³å°‘æœ‰ä¸€ä¸ªçº¿ç¨‹ã€‚
+ï¼ˆ6ï¼‰åˆ›å»ºå­è¿›ç¨‹æ˜¯å…‹éš†ä¸€ä»½çˆ¶è¿›ç¨‹ï¼Œçˆ¶å­è¿›ç¨‹çš„èµ„æºæ˜¯åˆ†ç¦»çš„ï¼Œè¿›ç¨‹é—´çš„é€šä¿¡æ˜¯å€ŸåŠ©ä»£ç†çš„ã€‚
+ï¼ˆ7ï¼‰çº¿ç¨‹æ˜¯å¯ä»¥ç›¸äº’å½±å“çš„ï¼Œå› ä¸ºèµ„æºæ˜¯å…±äº«çš„ã€‚
 
 
-¡¾socketserver²Ù×÷Á÷³Ì¡¿
-£¨1£©First, you must create a request handler class by subclassing the
-BaseRequestHandlerclass and overriding its handle() method;
-this method will process incoming requests. ¡¡¡¡
-£¨2£©Second, you must instantiate one of the server classes,
-passing it the server¡¯s address and the request handler class.
-£¨3£©Then call the handle_request() or serve_forever() method of the server
-object to process one or many requests.
-£¨4£©Finally, call server_close() to close the socket.
-
-Ïê¼ûhttp://www.cnblogs.com/alex3714/articles/5830365.html
-
-
-¡¾Ê±¼äÀú³Ì¡¿Ê±¼ä¡¢ÊµÏÖ·½Ê½¡¢¹¦ÄÜ
-2017.2.19	socketÊµÏÖssh         ÃüÁî½âÎö¡¢´óÊı¾İ´¦ÀíºÍÈıÖÖ·½Ê½ÊµÏÖÕ³°ü´¦Àí
-2017.2.19   socketÊµÏÖget_file    ÎÄ¼şÏÂÔØºÍMD5
-2017.2.19   socketserver»ù±¾Ê¹ÓÃ   ¶àÓÃ»§Óë·şÎñÆ÷½»»¥
 
