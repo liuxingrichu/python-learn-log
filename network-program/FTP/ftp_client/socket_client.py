@@ -7,11 +7,13 @@ import hashlib
 
 import os
 import sys
+import time
 
 BASE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(BASE_PATH)
 
 from conf import protocol
+from client_log import logger
 
 RECV_SIZE = 1024
 IP = 'localhost'
@@ -24,7 +26,6 @@ class FTPClient(object):
         self.username = None
         self.USER_ID = None
         self.home = os.path.join(BASE_PATH, 'home')
-        self.status = False
 
     def connect(self, ip, port):
         self.client.connect((ip, port))
@@ -53,11 +54,14 @@ class FTPClient(object):
     def push(self, *args):
         cmd_list = args[0].split()
         if len(cmd_list) != 2:
-            return protocol.AUTH_NUM_ERROR
+            logger.warning('need 2 parameters, but give %s parameters' %
+                           len(cmd_list))
+            return
 
         filename = cmd_list[1]
         if not os.path.isfile(filename):
-            return protocol.ARGS_NAME_ERROR
+            logger.warning('file: %s is not exist' % filename)
+            return
 
         filesize = os.stat(filename).st_size
         msg_dict = {
@@ -68,9 +72,12 @@ class FTPClient(object):
             'filesize': filesize,
         }
         self.client.send(json.dumps(msg_dict).encode())
-        res = self.client.recv(RECV_SIZE)
-        if res == protocol.DISK_NOT_ENOUGH:
-            return protocol.DISK_NOT_ENOUGH
+
+        res_data = self.client.recv(RECV_SIZE)
+        res_dict = json.loads(res_data.decode())
+        if res_dict['status_code'] == protocol.DISK_NOT_ENOUGH:
+            logger.warning('disk space is not enough')
+            return
 
         m = hashlib.md5()
         f = open(filename, 'rb')
@@ -80,18 +87,62 @@ class FTPClient(object):
         else:
             f.close()
 
-            msg_dict['FILE_ID'] = m.hexdigest()
-            self.client.send(json.dumps(msg_dict).encode())
-            data = self.client.recv(RECV_SIZE)
-            data_dict = json.loads(data.decode())
-            if data_dict['status_code'] == protocol.SUCCESS_CODE:
-                return protocol.SUCCESS_CODE
+        msg_dict['FILE_ID'] = m.hexdigest()
+        self.client.send(json.dumps(msg_dict).encode())
+        data = self.client.recv(RECV_SIZE)
+        data_dict = json.loads(data.decode())
+        if data_dict['status_code'] == protocol.SUCCESS_CODE:
+            logger.info('upload file: %s success' % filename)
+        else:
+            logger.info('upload file: %s fail' % filename)
+
+    def pull(self, *args):
+        cmd_list = args[0].split()
+        if len(cmd_list) != 2:
+            logger.warning('need 2 parameters, but give %s parameters' %
+                           len(cmd_list))
+            return
+
+        filename = cmd_list[1]
+        msg_dict = {
+            'username': self.username,
+            'action': 'pull',
+            'filename': filename,
+        }
+        self.client.send(json.dumps(msg_dict).encode())
+        self.data = self.client.recv(RECV_SIZE)
+        res_dict = json.loads(self.data.decode())
+        if res_dict['status_code'] == protocol.FILE_NOT_EXIST:
+            logger.warning('file %s is not exist' % filename)
+            return
+        else:
+            self.client.send(b'ok')
+            logger.info('file %s is receiving ...' % filename)
+
+        receive_size = 0
+        m = hashlib.md5()
+        filesize = res_dict['filesize']
+        f = open(filename, 'wb')
+        while receive_size < filesize:
+            if filesize - receive_size > RECV_SIZE:
+                SIZE = RECV_SIZE
             else:
-                return protocol.FILE_ID_ERROR
-
-    def pull(self, filename):
-        pass
-
+                SIZE = filesize - receive_size
+            data = self.client.recv(SIZE)
+            f.write(data)
+            m.update(data)
+            receive_size += len(data)
+        else:
+            f.close()
+            logger.info('file %s has received done' % filename)
+            data = self.client.recv(RECV_SIZE)
+            res_dict = json.loads(data.decode())
+            if res_dict['FILE_ID'] == m.hexdigest():
+                logger.info('file %s has downloaded successfully' % filename)
+            else:
+                logger.info('file %s has downloaded fail' % filename)
+                if os.path.isfile(filename):
+                    os.remove(filename)
 
     def ls(self):
         pass
@@ -125,17 +176,11 @@ class FTPClient(object):
                 cmd_str = cmd.split()[0]
                 if hasattr(self, cmd_str):
                     func = getattr(self, cmd_str)
-                    res = func(cmd)
-                    if res == protocol.AUTH_NUM_ERROR:
-                        print('\t\033[31;0m参数个数有误\033[0m')
-                    elif res == protocol.ARGS_NAME_ERROR:
-                        print('\t\033[31;0m参数有误\033[0m')
-                    elif res == protocol.SUCCESS_CODE:
-                        print('\t\033[32;0m%s 操作成功\033[0m' % cmd)
-                    else:
-                        pass
+                    func(cmd)
                 else:
                     print('\t\033[32;0m请输入help，进行查询\033[0m')
+
+                time.sleep(0.1)
 
     def help(self, *args):
         msg = """

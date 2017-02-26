@@ -9,4 +9,5 @@ DISK_ENOUGH = 300           #磁盘空间充足
 DISK_NOT_ENOUGH = 301       #磁盘空间不足
 LOGIN_ERROR = 400           #用户登录失败
 FILE_ID_ERROR = 401         #文件一致性有误
+FILE_NOT_EXIST = 402        #文件不存在
 

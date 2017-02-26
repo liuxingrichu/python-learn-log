@@ -31,7 +31,7 @@ class MyFTPServer(socketserver.BaseRequestHandler):
             data_dict['status_code'] = protocol.SUCCESS_CODE
             self.request.send(json.dumps(data_dict).encode())
             logger.info('%s login success' % data_dict['username'])
-            #user home
+            # user home
             user_path = os.path.join(server_settings.HOME_PATH,
                                      data_dict['username'])
             if not os.path.exists(user_path):
@@ -55,7 +55,7 @@ class MyFTPServer(socketserver.BaseRequestHandler):
         if usr_dict[user_id]['disk_free'] < filesize:
             cmd_dict['status_code'] = protocol.DISK_NOT_ENOUGH
             self.request.send(json.dumps(cmd_dict).encode())
-            logger.warning('%s of disk space is not enough')
+            logger.warning('%s of disk space is not enough' % username)
             return
         else:
             cmd_dict['status_code'] = protocol.DISK_ENOUGH
@@ -66,7 +66,7 @@ class MyFTPServer(socketserver.BaseRequestHandler):
         m = hashlib.md5()
         save_path = os.path.join(server_settings.HOME_PATH, username, filename)
 
-        #same file exist
+        # same file exist
         if os.path.isfile(save_path):
             old_file_size = os.stat(save_path).st_size
         else:
@@ -111,9 +111,36 @@ class MyFTPServer(socketserver.BaseRequestHandler):
                 os.remove(filename)
                 logger.info('%s delete file %s success' % (username, filename))
 
-    def pull(self, filename):
-        pass
+    def pull(self, *args):
+        cmd_dict = args[0]
+        filename = cmd_dict['filename']
+        username = cmd_dict['username']
 
+        home_path = os.path.join(server_settings.HOME_PATH, username, filename)
+        if not os.path.isfile(home_path):
+            cmd_dict['status_code'] = protocol.FILE_NOT_EXIST
+            self.request.send(json.dumps(cmd_dict).encode())
+            logger.warning('%s: %s is not exist' % (username, filename))
+            return
+        else:
+            cmd_dict['status_code'] = protocol.SUCCESS_CODE
+            cmd_dict['filesize'] = os.stat(home_path).st_size
+            self.request.send(json.dumps(cmd_dict).encode())
+            logger.info('%s start to transfer %s' % (username, filename))
+
+        # avoid stick package
+        self.request.recv(server_settings.RECV_SIZE)
+
+        m = hashlib.md5()
+        f = open(home_path, 'rb')
+        for line in f:
+            self.request.send(line)
+            m.update(line)
+        else:
+            f.close()
+            cmd_dict['FILE_ID'] = m.hexdigest()
+            self.request.send(json.dumps(cmd_dict).encode())
+            logger.info('%s has finished to transfer %s' % (username, filename))
 
     def ls(self):
         pass
@@ -132,6 +159,9 @@ class MyFTPServer(socketserver.BaseRequestHandler):
         while True:
             try:
                 self.data = self.request.recv(server_settings.RECV_SIZE)
+                if not self.data:
+                    break
+
                 cmd_dict = json.loads(self.data.decode())
                 action = cmd_dict['action']
                 if hasattr(self, action):
