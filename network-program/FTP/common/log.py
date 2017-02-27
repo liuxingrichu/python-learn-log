@@ -34,9 +34,9 @@ fh = logging.FileHandler(server_settings.LOG_PATH)
 ch = logging.StreamHandler()
 
 # set a pattern for formatter
-# formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-formatter = logging.Formatter(
-    '%(asctime)s %(levelname)s %(filename)s %(lineno)s %(message)s')
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+# formatter = logging.Formatter(
+#     '%(asctime)s %(levelname)s %(filename)s %(lineno)s %(message)s')
 fh.setFormatter(formatter)
 ch.setFormatter(formatter)
 

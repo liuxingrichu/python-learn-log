@@ -8,6 +8,7 @@ import hashlib
 import os
 import sys
 import time
+import re
 
 BASE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(BASE_PATH)
@@ -132,6 +133,7 @@ class FTPClient(object):
             f.write(data)
             m.update(data)
             receive_size += len(data)
+            self.show_bar(receive_size, filesize)
         else:
             f.close()
             logger.info('file %s has received done' % filename)
@@ -144,14 +146,54 @@ class FTPClient(object):
                 if os.path.isfile(filename):
                     os.remove(filename)
 
-    def ls(self):
-        pass
+    def ls(self, *args):
+        content_list = os.listdir(self.home)
+        print('content list'.center(20, '-'))
+        for content in content_list:
+            print(content)
+        print('-' * 20)
 
-    def cd(self, dirname):
-        pass
+    def cd(self, *args):
+        cmd_list = args[0].split()
+        if len(cmd_list) != 2:
+            logger.warning('need 2 parameters, but give %s parameters' %
+                           len(cmd_list))
+            return
 
-    def pwd(self):
-        pass
+        path_list = self.home.split(os.sep)
+        index = path_list.index(self.username)
+        if cmd_list[1] == '..':
+            if index + 1 < len(path_list):
+                path_list.pop()
+                self.home = os.sep.join(path_list)
+            else:
+                logger.warning('You must change directory in home directory')
+        else:
+            msg_dict = {
+                'username': self.username,
+                'action': 'cd',
+                'dirname': cmd_list[1],
+                'path': self.home,
+            }
+            self.client.send(json.dumps(msg_dict).encode())
+            data = self.client.recv(RECV_SIZE)
+            res_dict = json.loads(data.decode())
+            if res_dict['status_code'] == protocol.SUCCESS_CODE:
+                path_list.append(cmd_list[1])
+                self.home = os.sep.join(path_list)
+            elif res_dict['status_code'] == protocol.FILE_DIR_NOT_EXIST:
+                logger.warning('No such file or directory')
+            else:
+                logger.warning('Not a directory')
+
+    def pwd(self, *args):
+        path_list = self.home.split(os.sep)
+        index = path_list.index('home')
+        if os.path.isfile(path_list[-1]):
+            path = '/'.join(path_list[index:-1])
+        else:
+            path = '/'.join(path_list[index:])
+        print('/%s' % path)
 
     def interaction(self):
         while True:
@@ -169,7 +211,13 @@ class FTPClient(object):
                 print('\t welcome %s' % username)
 
             while True:
-                cmd = input("Enter command: ").strip()
+                path_list = self.home.split(os.sep)
+                if os.path.isfile(path_list[-1]):
+                    position = path_list[-2]
+                else:
+                    position = path_list[-1]
+                cmd = input('[%s@%s]$ ' % (self.username, position)).strip()
+                # cmd = input("Enter command: ").strip()
                 if len(cmd) == 0:
                     continue
 
@@ -202,6 +250,11 @@ class FTPClient(object):
         self.client.send(json.dumps(msg_dict).encode())
         self.client.close()
         sys.exit()
+
+    def show_bar(self, recv_size, total):
+        show_list = [x for x in range(10, 0, -1)]
+        if int((recv_size / total) * 10) in show_list:
+            logger.info('recv ..... {0:.2%}'.format(recv_size / total))
 
 
 def main():

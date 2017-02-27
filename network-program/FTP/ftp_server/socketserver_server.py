@@ -22,7 +22,7 @@ class MyFTPServer(socketserver.BaseRequestHandler):
             with open(server_settings.USER_INFO_PATH, 'r') as f:
                 user_dict = json.loads(f.read())
         except FileNotFoundError:
-            logger.error("\t请初始化数据库")
+            logger.error("Firstly, initiate  user information in database")
             data_dict['status_code'] = protocol.LOGIN_ERROR
             self.request.send(json.dumps(data_dict).encode())
             return
@@ -84,6 +84,7 @@ class MyFTPServer(socketserver.BaseRequestHandler):
             f.write(data)
             m.update(data)
             receive_size += len(data)
+            self.show_bar(receive_size, filesize)
         else:
             f.close()
             logger.info('%s transfer file %s done' % (username, filename))
@@ -142,18 +143,30 @@ class MyFTPServer(socketserver.BaseRequestHandler):
             self.request.send(json.dumps(cmd_dict).encode())
             logger.info('%s has finished to transfer %s' % (username, filename))
 
-    def ls(self):
-        pass
+    def cd(self, *args):
+        cmd_dict = args[0]
+        dirname = cmd_dict['dirname']
+        path = cmd_dict['path']
 
-    def cd(self, dirname):
-        pass
-
-    def pwd(self):
-        pass
+        if dirname in os.listdir(path):
+            if os.path.isfile(dirname):
+                cmd_dict['status_code'] = protocol.NOT_A_DIRECTORY
+                self.request.send(json.dumps(cmd_dict).encode())
+            else:
+                cmd_dict['status_code'] = protocol.SUCCESS_CODE
+                self.request.send(json.dumps(cmd_dict).encode())
+        else:
+            cmd_dict['status_code'] = protocol.FILE_DIR_NOT_EXIST
+            self.request.send(json.dumps(cmd_dict).encode())
 
     def quit(self, *args):
         cmd_dict = args[0]
         logger.info('%s quit' % cmd_dict['username'])
+
+    def show_bar(self, recv_size, total):
+        show_list = [x for x in range(10, 0, -1)]
+        if int((recv_size / total) * 10) in show_list:
+            logger.info('recv ..... {0:.2%}'.format(recv_size / total))
 
     def handle(self):
         while True:
