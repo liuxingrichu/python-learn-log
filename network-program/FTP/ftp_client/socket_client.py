@@ -8,7 +8,6 @@ import hashlib
 import os
 import sys
 import time
-import re
 
 BASE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(BASE_PATH)
@@ -27,6 +26,7 @@ class FTPClient(object):
         self.username = None
         self.USER_ID = None
         self.home = os.path.join(BASE_PATH, 'home')
+        self.show = list()
 
     def connect(self, ip, port):
         self.client.connect((ip, port))
@@ -123,6 +123,7 @@ class FTPClient(object):
         receive_size = 0
         m = hashlib.md5()
         filesize = res_dict['filesize']
+        self.show = [x for x in range(10, 0, -1)]
         f = open(filename, 'wb')
         while receive_size < filesize:
             if filesize - receive_size > RECV_SIZE:
@@ -147,7 +148,15 @@ class FTPClient(object):
                     os.remove(filename)
 
     def ls(self, *args):
-        content_list = os.listdir(self.home)
+        msg_dict = {
+            'username': self.username,
+            'action': 'ls',
+            'path': self.home,
+        }
+        self.client.send(json.dumps(msg_dict).encode())
+        self.data = self.client.recv(RECV_SIZE)
+        res_dict = json.loads(self.data.decode())
+        content_list = res_dict['content']
         print('content list'.center(20, '-'))
         for content in content_list:
             print(content)
@@ -208,7 +217,7 @@ class FTPClient(object):
                 print('\t\033[31;0m用户名或密码错误\033[0m')
                 continue
             else:
-                print('\t welcome %s' % username)
+                print('\t\033[32;0mwelcome %s\033[0m' % username)
 
             while True:
                 path_list = self.home.split(os.sep)
@@ -217,7 +226,6 @@ class FTPClient(object):
                 else:
                     position = path_list[-1]
                 cmd = input('[%s@%s]$ ' % (self.username, position)).strip()
-                # cmd = input("Enter command: ").strip()
                 if len(cmd) == 0:
                     continue
 
@@ -252,9 +260,9 @@ class FTPClient(object):
         sys.exit()
 
     def show_bar(self, recv_size, total):
-        show_list = [x for x in range(10, 0, -1)]
-        if int((recv_size / total) * 10) in show_list:
+        if int((recv_size / total) * 10) in self.show:
             logger.info('recv ..... {0:.2%}'.format(recv_size / total))
+            self.show.pop()
 
 
 def main():

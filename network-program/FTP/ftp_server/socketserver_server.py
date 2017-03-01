@@ -12,7 +12,7 @@ sys.path.append(BASE_PATH)
 
 from conf import server_settings
 from conf import protocol
-from common.log import logger
+from log import logger
 
 
 class MyFTPServer(socketserver.BaseRequestHandler):
@@ -84,7 +84,6 @@ class MyFTPServer(socketserver.BaseRequestHandler):
             f.write(data)
             m.update(data)
             receive_size += len(data)
-            self.show_bar(receive_size, filesize)
         else:
             f.close()
             logger.info('%s transfer file %s done' % (username, filename))
@@ -159,14 +158,17 @@ class MyFTPServer(socketserver.BaseRequestHandler):
             cmd_dict['status_code'] = protocol.FILE_DIR_NOT_EXIST
             self.request.send(json.dumps(cmd_dict).encode())
 
+    def ls(self, *args):
+        cmd_dict = args[0]
+        path = cmd_dict['path']
+        os.chdir(path)
+        content = os.listdir('.')
+        cmd_dict['content'] = content
+        self.request.send(json.dumps(cmd_dict).encode())
+
     def quit(self, *args):
         cmd_dict = args[0]
         logger.info('%s quit' % cmd_dict['username'])
-
-    def show_bar(self, recv_size, total):
-        show_list = [x for x in range(10, 0, -1)]
-        if int((recv_size / total) * 10) in show_list:
-            logger.info('recv ..... {0:.2%}'.format(recv_size / total))
 
     def handle(self):
         while True:

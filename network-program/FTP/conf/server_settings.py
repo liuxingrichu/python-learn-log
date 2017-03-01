@@ -10,7 +10,7 @@ PORT = 9999
 
 BASE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HOME_PATH = os.path.join(BASE_PATH, 'home')
-LOG_PATH = os.path.join(BASE_PATH, 'log', 'ftp_server.log')
+# LOG_PATH = os.path.join(BASE_PATH, 'log', 'ftp_server.log')
 USER_INFO_PATH = os.path.join(BASE_PATH, 'database', 'user_info.db')
 
 

@@ -28,7 +28,7 @@ logger = logging.getLogger('mylogger')
 logger.setLevel(logging.DEBUG)
 
 # create file handler and save log file path
-fh = logging.FileHandler(server_settings.LOG_PATH)
+fh = logging.FileHandler('server_log.log')
 
 # create console handler
 ch = logging.StreamHandler()
