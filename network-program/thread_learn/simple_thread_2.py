@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 
+"""
+    类方式创建线程
+"""
+
 import threading
 
 
