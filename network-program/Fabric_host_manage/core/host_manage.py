@@ -14,6 +14,9 @@ DB_PATH = os.path.join(BASE_PATH, 'database')
 
 
 class RemoteHost(object):
+    """
+    remote manage host
+    """
     def __init__(self, host, port, username, password):
         self.host = host
         self.port = port
@@ -62,7 +65,6 @@ class RemoteHost(object):
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh.connect(self.host, self.port, self.username,
                     self.password)
-        print(cmd)
         stdin, stdout, stderr = ssh.exec_command(cmd)
         res = stdout.read()
         result = res if res else stderr.read()
@@ -99,7 +101,7 @@ def main():
         host_obj = RemoteHost(host, port, username, password)
 
         while True:
-            cmd = input('>> ').strip()
+            cmd = input('[%s@%s]$ '% (username, host)).strip()
             if cmd == 'q':
                 break
             if not cmd:
