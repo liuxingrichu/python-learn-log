@@ -17,6 +17,7 @@ class RemoteHost(object):
     """
     remote manage host
     """
+
     def __init__(self, host, port, username, password):
         self.host = host
         self.port = port
@@ -25,28 +26,42 @@ class RemoteHost(object):
 
     def put(self, *args):
         cmd_list = re.split('\s+', args[0])
+        if len(cmd_list) != 3:
+            print('Err: need 2 parameters, but give %s parameters' % (
+                len(cmd_list) - 1))
+            return
+
         transport = paramiko.Transport((self.host, self.port))
         transport.connect(username=self.username, password=self.password)
         sftp = paramiko.SFTPClient.from_transport(transport)
         try:
             sftp.put(cmd_list[1], cmd_list[2])
         except PermissionError:
+            print('%s'.center(36, '-') % self.host)
             print('\033[31;0m\tYou do not have the permission.\033[0m')
         except FileNotFoundError:
+            print('%s'.center(36, '-') % self.host)
             print('\033[31;0m\t%s is not exist.\033[0m' % cmd_list[1])
         transport.close()
 
     def get(self, *args):
         cmd_list = re.split('\s+', args[0])
+        if len(cmd_list) != 3:
+            print('Err: need 2 parameters, but give %s parameters' % (
+                len(cmd_list) - 1))
+            return
+
         transport = paramiko.Transport((self.host, self.port))
         transport.connect(username=self.username, password=self.password)
         sftp = paramiko.SFTPClient.from_transport(transport)
         try:
             sftp.get(cmd_list[1], cmd_list[2])
         except PermissionError:
+            print('%s'.center(36, '-') % self.host)
             print('\033[31;0m\tYou do not have the permission.\033[0m')
             os.remove(cmd_list[2])
         except FileNotFoundError:
+            print('%s'.center(36, '-') % self.host)
             print('\033[31;0m\t%s is not exist.\033[0m' % cmd_list[1])
             os.remove(cmd_list[2])
         transport.close()
@@ -69,7 +84,9 @@ class RemoteHost(object):
         res = stdout.read()
         result = res if res else stderr.read()
         if result:
+            print('%s'.center(36, '-') % self.host)
             print(result.decode())
+            print('end'.center(48, '-'))
         ssh.close()
 
 
@@ -83,33 +100,46 @@ def main():
         sys.exit()
 
     while True:
-        print('主机信息'.center(26, '-'))
-        for n, k in enumerate(host_dict):
-            print('主机', n + 1, k)
-        print('end'.center(30, '-'))
+        print('设备清单'.center(36, '-'))
+        for k in host_dict:
+            print(k, end='\t')
+            for v in host_dict[k]:
+                print(v, end='\t')
+            print()
+        print('end'.center(40, '-'))
 
-        host = input('选择主机：').strip()
-        if host == 'q':
+        group = input('选择组名：').strip()
+        if group == 'q':
             break
-        if host not in host_dict:
+
+        if group not in host_dict:
             continue
 
-        port = host_dict[host]['port']
-        username = host_dict[host]['username']
-        password = host_dict[host]['password']
+        host_list = []
+        for host in host_dict[group]:
+            host_list.append(host)
 
-        host_obj = RemoteHost(host, port, username, password)
+        thread_list = []
 
         while True:
-            cmd = input('[%s@%s]$ '% (username, host)).strip()
+            cmd = input('>>').strip()
             if cmd == 'q':
                 break
             if not cmd:
                 continue
 
-            t = threading.Thread(target=host_obj.run, args=(cmd,))
-            t.start()
-            t.join()
+            for host in host_list:
+                port = host_dict[group][host]['port']
+                username = host_dict[group][host]['username']
+                password = host_dict[group][host]['password']
+
+                host_obj = RemoteHost(host, port, username, password)
+                t = threading.Thread(target=host_obj.run, args=(cmd,))
+                t.start()
+                thread_list.append(t)
+
+            for t in thread_list:
+                t.join()
 
 
 if __name__ == '__main__':

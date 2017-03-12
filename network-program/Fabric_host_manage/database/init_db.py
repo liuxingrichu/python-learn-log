@@ -4,14 +4,22 @@
 import json
 
 host_dict = {
-    '10.0.0.10': {'username': 'Tom',
-                  'password': '100',
-                  'port': 22,
-                  },
-    '10.0.0.11': {'username': 'Lucy',
-                  'password': '110',
-                  'port': 22,
-                  },
+    'group1': {
+        '10.0.0.10': {'username': 'Tom',
+                      'password': '100',
+                      'port': 22,
+                      },
+        '10.0.0.11': {'username': 'Lucy',
+                      'password': '110',
+                      'port': 22,
+                      },
+    },
+    'group2': {
+        '10.0.0.12': {'username': 'Tom',
+                      'password': '100',
+                      'port': 22,
+                      },
+    },
 }
 
 
