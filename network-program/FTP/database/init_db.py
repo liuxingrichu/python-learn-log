@@ -7,16 +7,16 @@ user_info = [
     {
         'username': 'Tom',
         'password': '123',
-        'disk_space': 1024,
+        'disk_space': 1024000000,
         'disk_used': 0,
-        'disk_free': 1024,
+        'disk_free': 1024000000,
     },
     {
         'username': 'Lucy',
         'password': '123',
-        'disk_space': 512,
+        'disk_space': 512000,
         'disk_used': 0,
-        'disk_free': 512,
+        'disk_free': 512000,
     },
     {
         'username': 'John',
