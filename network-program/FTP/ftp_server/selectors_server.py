@@ -85,11 +85,7 @@ class MyFTPServer(object):
                 SIZE = server_settings.RECV_SIZE
             else:
                 SIZE = filesize - receive_size
-
-            try:
-                data = self.request.recv(SIZE)
-            except BlockingIOError:
-                continue
+            data = self.request.recv(SIZE)
             f.write(data)
             m.update(data)
             receive_size += len(data)
@@ -138,13 +134,7 @@ class MyFTPServer(object):
             logger.info('%s start to transfer %s' % (username, filename))
 
         # avoid stick package
-        while True:
-            try:
-                data = self.request.recv(server_settings.RECV_SIZE)
-                if data:
-                    break
-            except BlockingIOError:
-                continue
+        self.request.recv(server_settings.RECV_SIZE)
 
         m = hashlib.md5()
         f = open(home_path, 'rb')
@@ -190,15 +180,7 @@ class MyFTPServer(object):
 
     def handle(self, conn, mask):
         try:
-
             self.data = self.request.recv(server_settings.RECV_SIZE)
-
-
-            # if not self.data:
-            #     logger.warning('client disconnect')
-            #     return
-
-
             cmd_dict = json.loads(self.data.decode())
             action = cmd_dict['action']
             if hasattr(self, action):
@@ -210,18 +192,12 @@ class MyFTPServer(object):
             conn.close()
 
 
-
 def accept(sock, mask):
     conn, addr = sock.accept()
-    conn.setblocking(False)
+    conn.setblocking(True)
     server = MyFTPServer(conn)
     sel.register(conn, selectors.EVENT_READ, server.handle)
 
-
-# def main():
-#     server = socketserver.ThreadingTCPServer(
-#         (server_settings.IP, server_settings.PORT), MyFTPServer)
-#     server.serve_forever()
 
 def main():
     sock = socket.socket()
