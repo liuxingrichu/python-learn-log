@@ -10,6 +10,12 @@ import sys
 IP = 'localhost'
 PORT = 9999
 RECV_SIZE = 1024
+SEND_SIZE = 1024
+MD5_SIZE = 32
+
+SUCCESS = 200
+NOT_FOUND = 404
+MD5_ERROR = 300
 
 
 class MyClient(object):
@@ -36,7 +42,7 @@ class MyClient(object):
         feedback = self.myclient.recv(RECV_SIZE)
         msg_dict = json.loads(feedback.decode())
         status = msg_dict.get('status')
-        if status == '404':
+        if status == NOT_FOUND:
             print('\t%s is not exist.' % filename)
             return
 
@@ -68,7 +74,44 @@ class MyClient(object):
             os.remove(tmp_file)
 
     def put(self, filename):
-        pass
+        if not os.path.isfile(filename):
+            print('\t%s is not exist.' % filename)
+            return
+        total = os.path.getsize(filename)
+
+        msg_dict = {'action': 'put',
+                    'filename': filename,
+                    'total': total,
+                    }
+        self.myclient.send(json.dumps(msg_dict).encode())
+        data = self.myclient.recv(RECV_SIZE).decode()
+        msg_dict = json.loads(data)
+        position = msg_dict['position']
+        send_size = 0
+        total_size = total - position
+        m = hashlib.md5()
+        with open(filename, 'rb') as f:
+            f.seek(position)
+            while send_size < total_size:
+                if total_size - send_size > SEND_SIZE:
+                    buffer_size = SEND_SIZE
+                else:
+                    buffer_size = total_size - send_size
+                data = f.read(buffer_size)
+                self.myclient.send(data)
+                m.update(data)
+                send_size += len(data)
+                self.process_bar(send_size, total_size)
+        print()
+        md5 = self.myclient.recv(MD5_SIZE).decode()
+        if md5 == m.hexdigest():
+            print('\t%s upload success!' % filename)
+            msg_dict['status'] = SUCCESS
+            self.myclient.send(json.dumps(msg_dict).encode())
+        else:
+            print('\t%s upload fail!' % filename)
+            msg_dict['status'] = MD5_ERROR
+            self.myclient.send(json.dumps(msg_dict).encode())
 
     def process_bar(self, m, n):
         percent = int(m / n * 100)

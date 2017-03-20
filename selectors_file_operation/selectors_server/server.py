@@ -12,6 +12,9 @@ PORT = 9999
 RECV_SIZE = 1024
 READ_SIZE = 1024
 
+SUCCESS = 200
+NOT_FOUND = 404
+
 
 class MyServer(object):
     def __init__(self):
@@ -54,11 +57,11 @@ class MyServer(object):
         filename = msg_dict['filename']
         position = msg_dict['position']
         if not os.path.isfile(filename):
-            msg_dict['status'] = '404'
+            msg_dict['status'] = NOT_FOUND
             self.request.send(json.dumps(msg_dict).encode())
             return
         else:
-            msg_dict['status'] = '200'
+            msg_dict['status'] = SUCCESS
             total_size = os.path.getsize(filename) - position
             msg_dict['total'] = total_size
             self.request.send(json.dumps(msg_dict).encode())
@@ -76,11 +79,43 @@ class MyServer(object):
                 send_size += len(data)
                 m.update(data)
                 self.request.send(data)
-
         self.request.send(m.hexdigest().encode())
 
     def put(self, *args):
-        pass
+        msg_dict = args[0]
+        filename = msg_dict['filename']
+        total = msg_dict['total']
+        tmp_file = filename + '.tmp'
+        if os.path.isfile(tmp_file):
+            position = os.path.getsize(tmp_file)
+        else:
+            position = 0
+        msg_dict['position'] = position
+        self.request.send(json.dumps(msg_dict).encode())
+        m = hashlib.md5()
+        recv_size = 0
+        total_size = total - position
+        with open(tmp_file, 'ab') as f:
+            f.seek(position)
+            while recv_size < total_size:
+                if total_size - recv_size > RECV_SIZE:
+                    buffer_size = RECV_SIZE
+                else:
+                    buffer_size = total_size - recv_size
+                data = self.request.recv(buffer_size)
+                f.write(data)
+                m.update(data)
+                recv_size += len(data)
+        self.request.send(m.hexdigest().encode())
+        data = self.request.recv(RECV_SIZE).decode()
+        status = json.loads(data).get('status')
+        if status == SUCCESS:
+            if os.path.isfile(filename):
+                os.remove(filename)
+            os.rename(tmp_file, filename)
+            print('\t%s upload success.' % filename)
+        else:
+            os.remove(tmp_file)
 
 
 def main():
